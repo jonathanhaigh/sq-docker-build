@@ -3,15 +3,20 @@ ARG DEBIAN_FRONTEND=noninteractive
 ENV TZ=Europe/London
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
+        bash \
 		build-essential \
         ca-certificates \
 		clang-11 \
         clang-tidy-11 \
 		cmake \
+        coreutils \
+        curl \
 		gcc-10 \
 		g++-10 \
 		git \
+        lftp \
         ninja-build \
+        openssh-client \
 		tar \
         wget && \
     apt-get autoclean && \
