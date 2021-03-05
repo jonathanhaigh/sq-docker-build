@@ -11,7 +11,7 @@ def env_var_to_bool(value):
     return value.upper() not in ("0", "FALSE", "NO", "")
 
 def get_arg_from_env(args, var, typ):
-    for env_var in (var.upper(), f"SQ_{var.upper()}"):
+    for env_var in (var.upper(), f"SQ_{var.upper()}", f"INPUT_{var.upper()}"):
         if env_var in os.environ:
             args[var] = typ(os.environ[env_var])
 

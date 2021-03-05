@@ -1,11 +1,11 @@
 name: "SQ CI"
 description: "Build and test SQ"
 inputs:
-  build-type:
+  build_type:
     description: "Type of build (Release or Debug)"
     required: false
     default: "Release"
-  clang-tidy:
+  clang_tidy:
     description: "Whether to use Clang-Tidy"
     required: false
     default: false
@@ -13,7 +13,7 @@ inputs:
     description: "Whether to instrument for coverage analysis"
     required: false
     default: false
-  cxx-compiler:
+  cxx_compiler:
     description: "The C++ compiler to use"
     required: false
     default: "clang++"
