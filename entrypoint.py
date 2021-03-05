@@ -15,6 +15,13 @@ def get_arg_from_env(args, var, typ):
         if env_var in os.environ:
             args[var] = typ(os.environ[env_var])
 
+def serialize(thing):
+    if isinstance(thing, list):
+        return json.dumps([str(arg) for arg in thing])
+    elif isinstance(thing, dict):
+        return {k: str(v) for k, v in thing.items()}
+    else:
+        return str(thing)
 
 def get_default_args():
     return {
@@ -45,7 +52,7 @@ def parse_env():
 
     return args
 
-def parse_args():
+def parse_cmdline_args():
     parser = argparse.ArgumentParser(argument_default=argparse.SUPPRESS)
     parser.add_argument("--build-dir")
     parser.add_argument("--build-type")
@@ -58,6 +65,27 @@ def parse_args():
     args = parser.parse_args()
 
     return vars(args)
+
+def parse_args():
+    default_args = get_default_args()
+    env_args = parse_env()
+    cmdline_args = parse_cmdline_args()
+    logging.info(f"default settings: {serialize(default_args)}")
+    logging.info(f"environment settings: {serialize(env_args)}")
+    logging.info(f"command line settings: {serialize(cmdline_args)}")
+
+    args = { }
+    args.update(default_args)
+    args.update(env_args)
+    args.update(cmdline_args)
+
+    if not args['build_dir'].is_absolute():
+        args['build_dir'] = args['repo'] / args['build_dir']
+
+    logging.info(f"aggregated settings: {serialize(args)}")
+
+    return args
+
 
 def cmake_bool(value):
     return "TRUE" if value else "FALSE"
@@ -101,14 +129,8 @@ def coverage(args):
     log_and_run(coveralls_args, cwd=args['build_dir'], check=True)
 
 def main():
-    args = get_default_args()
-    args.update(parse_env())
-    args.update(parse_args())
-
-    if not args['build_dir'].is_absolute():
-        args['build_dir'] = args['repo'] / args['build_dir']
-
     logging.basicConfig(level=logging.INFO)
+    args = parse_args()
     configure(args)
     build(args)
     if args['test'] or args['coverage']:
