@@ -13,6 +13,9 @@ inputs:
     description: "Whether to instrument for coverage analysis"
     required: false
     default: false
+  coveralls_repo_token:
+    description: "A token to identify the repo when sending coverage reports to coveralls"
+    required: false
   cxx_compiler:
     description: "The C++ compiler to use"
     required: false

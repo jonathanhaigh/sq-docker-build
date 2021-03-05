@@ -45,6 +45,7 @@ def parse_env():
     get_arg_from_env(args, "build_type", str)
     get_arg_from_env(args, "clang_tidy", env_var_to_bool)
     get_arg_from_env(args, "coverage", env_var_to_bool)
+    get_arg_from_env(args, "coveralls_repo_token", str)
     get_arg_from_env(args, "cxx_compiler", str)
     get_arg_from_env(args, "jobs", int)
     get_arg_from_env(args, "repo", pathlib.Path)
@@ -58,6 +59,7 @@ def parse_cmdline_args():
     parser.add_argument("--build-type")
     parser.add_argument("--clang-tidy", action="store_true")
     parser.add_argument("--coverage", action="store_true")
+    parser.add_argument("--coveralls-repo-token")
     parser.add_argument("--cxx-compiler")
     parser.add_argument("--jobs", type=int)
     parser.add_argument("--repo", type=pathlib.Path)
@@ -115,7 +117,11 @@ def build(args):
 def test(args):
     log_and_run(["ninja", "test"], cwd=args['build_dir'], check=True)
 
-def coverage(args):
+def coveralls(args):
+    # Note: don't use subprocess.run/log_and_run's "env" parameter - we don't
+    # want to log the secret coveralls repo token
+    os.environ["COVERALLS_REPO_TOKEN"] = args["coveralls_repo_token"]
+
     gcov = "gcov" if args['cxx_compiler'] == "g++" else "llvm-gcov"
     coveralls_args = [
         "coveralls",
@@ -135,7 +141,7 @@ def main():
     build(args)
     if args['test'] or args['coverage']:
         test(args)
-    if args['coverage']:
-        coverage(args)
+    if args['coveralls_repo_token']:
+        coveralls(args)
 
 main()
