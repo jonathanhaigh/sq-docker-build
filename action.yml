@@ -1,0 +1,30 @@
+name: "SQ CI"
+description: "Build and test SQ"
+inputs:
+  build-type:
+    description: "Type of build (Release or Debug)"
+    required: false
+    default: "Release"
+  clang-tidy:
+    description: "Whether to use Clang-Tidy"
+    required: false
+    default: false
+  coverage:
+    description: "Whether to instrument for coverage analysis"
+    required: false
+    default: false
+  cxx-compiler:
+    description: "The C++ compiler to use"
+    required: false
+    default: "clang++"
+  jobs:
+    description: "The number of parallel make or ninja jobs"
+    required: false
+    default: 4
+  test:
+    description: "Whether to run tests"
+    required: false 
+    default: false
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
