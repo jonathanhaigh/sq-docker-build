@@ -40,5 +40,6 @@ RUN update-alternatives --install /usr/bin/llvm-cov llvm-cov /usr/bin/llvm-cov-1
 RUN update-alternatives --install /usr/bin/python python /usr/bin/python3 100
 COPY llvm-gcov /usr/local/bin/llvm-gcov
 RUN pip3 install cpp-coveralls
+RUN pip3 install pytest
 COPY entrypoint.py /entrypoint.py
 ENTRYPOINT ["/entrypoint.py"]
