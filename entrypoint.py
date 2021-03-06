@@ -55,7 +55,7 @@ def parse_env():
 
 def parse_cmdline_args():
     parser = argparse.ArgumentParser(argument_default=argparse.SUPPRESS)
-    parser.add_argument("--build-dir")
+    parser.add_argument("--build-dir", type=pathlib.Path)
     parser.add_argument("--build-type")
     parser.add_argument("--clang-tidy", action="store_true")
     parser.add_argument("--coverage", action="store_true")
