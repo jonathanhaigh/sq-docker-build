@@ -15,11 +15,17 @@ def get_arg_from_env(args, var, typ):
         if env_var in os.environ:
             args[var] = typ(os.environ[env_var])
 
+def hide_secrets(key, value):
+    if key.upper() in ("COVERALLS_REPO_TOKEN",):
+        return "****"
+    else:
+        return value
+
 def serialize(thing):
     if isinstance(thing, list):
         return json.dumps([str(arg) for arg in thing])
     elif isinstance(thing, dict):
-        return {k: str(v) for k, v in thing.items()}
+        return {k: hide_secrets(k, str(v)) for k, v in thing.items()}
     else:
         return str(thing)
 
@@ -39,7 +45,7 @@ def parse_env():
     args = {}
 
     if "GITHUB_WORKSPACE" in os.environ:
-        args["repo"] = pathlib.Path(os.environ["GITHUB_WORKSPACE"])
+        args['repo'] = pathlib.Path(os.environ['GITHUB_WORKSPACE'])
 
     get_arg_from_env(args, "build_dir", pathlib.Path)
     get_arg_from_env(args, "build_type", str)
@@ -47,6 +53,7 @@ def parse_env():
     get_arg_from_env(args, "coverage", env_var_to_bool)
     get_arg_from_env(args, "coveralls_repo_token", str)
     get_arg_from_env(args, "cxx_compiler", str)
+    get_arg_from_env(args, "install_prefix", str)
     get_arg_from_env(args, "jobs", int)
     get_arg_from_env(args, "repo", pathlib.Path)
     get_arg_from_env(args, "test", env_var_to_bool)
@@ -61,6 +68,7 @@ def parse_cmdline_args():
     parser.add_argument("--coverage", action="store_true")
     parser.add_argument("--coveralls-repo-token")
     parser.add_argument("--cxx-compiler")
+    parser.add_argument("--install-prefix", type=pathlib.Path)
     parser.add_argument("--jobs", type=int)
     parser.add_argument("--repo", type=pathlib.Path)
     parser.add_argument("--test", action="store_true")
@@ -92,10 +100,12 @@ def parse_args():
 def cmake_bool(value):
     return "TRUE" if value else "FALSE"
 
-def log_and_run(cmd, **kwargs):
-    cmd = [str(arg) for arg in cmd]
-    kwargs = {k: str(v) for k, v in kwargs.items()}
-    logging.info(f"Running command {json.dumps(cmd)} with options {json.dumps(kwargs)}")
+def log_and_run(args, cmd, **kwargs):
+    logging.info(f"Running command {serialize(cmd)} with options {serialize(kwargs)}")
+    if "check" not in kwargs:
+        kwargs['check'] = True
+    if "cwd" not in kwargs:
+        kwargs['cwd'] = args['build_dir']
     return subprocess.run(cmd, **kwargs)
 
 def configure(args):
@@ -107,20 +117,30 @@ def configure(args):
         f"-DSQ_USE_CLANG_TIDY={cmake_bool(args['clang_tidy'])}",
         f"-DSQ_USE_COVERAGE={cmake_bool(args['coverage'])}",
         f"-DCMAKE_CXX_COMPILER={args['cxx_compiler']}",
-        args['repo'],
     ]
-    log_and_run(cmake_args, cwd=args['build_dir'], check=True)
+
+    if 'install_prefix' in args:
+        cmake_args.append(f"-DCMAKE_INSTALL_PREFIX={args['install_prefix']}")
+
+    if args['test']:
+        cmake_args.append(f"-DSQ_BUILD_TESTS=TRUE")
+
+    cmake_args.append(args['repo'])
+    log_and_run(args, cmake_args)
 
 def build(args):
-    log_and_run(["ninja", f"-j{args['jobs']}"], cwd=args['build_dir'], check=True)
+    log_and_run(args, ["ninja", f"-j{args['jobs']}"])
+
+def install(args):
+    log_and_run(args, ["ninja", "install"])
 
 def test(args):
-    log_and_run(["ninja", "test"], cwd=args['build_dir'], check=True)
+    log_and_run(args, ["ninja", "test"])
 
 def coveralls(args):
     # Note: don't use subprocess.run/log_and_run's "env" parameter - we don't
     # want to log the secret coveralls repo token
-    os.environ["COVERALLS_REPO_TOKEN"] = args["coveralls_repo_token"]
+    os.environ['COVERALLS_REPO_TOKEN'] = args['coveralls_repo_token']
 
     gcov = "gcov" if args['cxx_compiler'] == "g++" else "llvm-gcov"
     coveralls_args = [
@@ -132,16 +152,25 @@ def coveralls(args):
         "--exclude", "_deps/",
         "--exclude-pattern", ".*/test/.*",
     ]
-    log_and_run(coveralls_args, cwd=args['build_dir'], check=True)
+    log_and_run(args, coveralls_args)
 
 def main():
     logging.basicConfig(level=logging.INFO)
     args = parse_args()
     configure(args)
     build(args)
-    if args['test'] or args['coverage']:
-        test(args)
-    if args['coveralls_repo_token']:
+    install(args)
+    exception = None
+    try:
+        if args['test'] or args['coverage']:
+            test(args)
+    except subprocess.CalledProcessError as e:
+        exception = e
+
+    if 'coveralls_repo_token' in args:
         coveralls(args)
+
+    if exception:
+        raise exception
 
 main()
