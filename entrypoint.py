@@ -92,6 +92,9 @@ def parse_args():
     if not args['build_dir'].is_absolute():
         args['build_dir'] = args['repo'] / args['build_dir']
 
+    if args['coverage']:
+        args['test'] = True
+
     logging.info(f"aggregated settings: {serialize(args)}")
 
     return args
@@ -163,7 +166,7 @@ def main():
     install(args)
     exception = None
     try:
-        if args['test'] or args['coverage']:
+        if args['test']:
             test(args)
     except subprocess.CalledProcessError as e:
         exception = e
