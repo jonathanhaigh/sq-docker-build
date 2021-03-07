@@ -135,6 +135,7 @@ def install(args):
     log_and_run(args, ["ninja", "install"])
 
 def test(args):
+    os.environ['CTEST_OUTPUT_ON_FAILURE'] = "1"
     log_and_run(args, ["ninja", "test"])
 
 def coveralls(args):
