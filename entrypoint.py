@@ -35,6 +35,8 @@ def get_default_args():
         "build_type": "Release",
         "clang_tidy": False,
         "coverage": False,
+        "coveralls_repo_token": None,
+        "install_prefix": None,
         "cxx_compiler": "clang++",
         "jobs": 4,
         "repo": pathlib.Path("/work"),
@@ -122,7 +124,7 @@ def configure(args):
         f"-DCMAKE_CXX_COMPILER={args['cxx_compiler']}",
     ]
 
-    if 'install_prefix' in args:
+    if args['install_prefix']:
         cmake_args.append(f"-DCMAKE_INSTALL_PREFIX={args['install_prefix']}")
 
     if args['test']:
@@ -171,7 +173,7 @@ def main():
     except subprocess.CalledProcessError as e:
         exception = e
 
-    if 'coveralls_repo_token' in args:
+    if args['coverage'] and args['coveralls_repo_token']:
         coveralls(args)
 
     if exception:
