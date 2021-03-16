@@ -16,6 +16,7 @@ RUN apt-get update && \
         g++-10 \
         git \
         lftp \
+        libudev-dev \
         llvm-11 \
         ninja-build \
         openssh-client \
